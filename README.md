@@ -62,4 +62,3 @@ This circuit makes several simplifications compared to real Solana key derivatio
 - Each value should be a 64-bit integer (0 to 2^64-1)
 - This is a simplified implementation for demonstration purposes
 - Real Solana key derivation uses HMAC-SHA512 and Ed25519 curve operations
-# prove2pubkeys_v2
