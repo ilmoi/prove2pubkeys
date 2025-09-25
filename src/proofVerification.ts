@@ -2,7 +2,7 @@ import { join } from "path";
 import * as snarkjs from "snarkjs";
 
 /**
- * Verifies a proof using the compiled circuit
+ * Verifies a proof using the compiled circuit with real ZK proof verification
  */
 export async function verifyProof(
   proof: any,
@@ -10,19 +10,22 @@ export async function verifyProof(
 ): Promise<boolean> {
   try {
     // Load the verification key
-    const vkeyPath = join(__dirname, "../2pubkeys.r1cs"); // We'll need to generate this
+    const vkeyPath = join(__dirname, "../verification_key.json");
+    const fs = require("fs");
+    const vkey = JSON.parse(fs.readFileSync(vkeyPath, "utf8"));
 
-    console.log("vkeyPath", vkeyPath);
-    console.log("publicSignals", publicSignals);
-    console.log("proof", proof);
-
-    // Verify the proof
-    const isValid = await snarkjs.groth16.verify(
-      vkeyPath,
-      publicSignals,
-      proof
+    console.log("Verifying real ZK proof using snarkjs.groth16.verify");
+    console.log("Proof structure:", Object.keys(proof));
+    console.log(
+      "Public signals:",
+      publicSignals.map((x: any) => x.toString())
     );
+    console.log("Verification key curve:", vkey.curve);
 
+    // Verify the proof using snarkjs with the loaded vkey object
+    const isValid = await snarkjs.groth16.verify(vkey, publicSignals, proof);
+
+    console.log("Proof verification result:", isValid);
     return isValid;
   } catch (error) {
     console.error("Error verifying proof:", error);

@@ -6,7 +6,10 @@ import { verifyKeyDerivation, verifyWitness } from "./proofVerification";
  * Main function that demonstrates the complete flow:
  * 1. Derives 2 fake Solana pubkeys from a seed
  * 2. Generates a proof using the circuit
- * 3. Verifies the proof
+ * 3. Verifies the proof using witness verification (verifyWitness)
+ *
+ * NOTE: This version uses witness verification which only checks the circuit output,
+ * not the cryptographic proof. For proper ZK proof verification, use index2.ts
  */
 async function main() {
   console.log("🚀 Starting Prove2PubKeys demonstration...\n");

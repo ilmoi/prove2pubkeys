@@ -3,7 +3,7 @@ import { join } from "path";
 import * as snarkjs from "snarkjs";
 
 /**
- * Generates a proof using the compiled circuit
+ * Generates a proof using the compiled circuit with real ZK proof generation
  */
 export async function generateProof(
   seed: bigint[],
@@ -15,7 +15,7 @@ export async function generateProof(
   try {
     // Load the compiled circuit files
     const wasmPath = join(__dirname, "../2pubkeys_js/2pubkeys.wasm");
-    const zkeyPath = join(__dirname, "../2pubkeys.r1cs"); // We'll need to generate this
+    const zkeyPath = join(__dirname, "../2pubkeys_final.zkey");
 
     // Prepare input for the circuit
     const input = {
@@ -26,13 +26,23 @@ export async function generateProof(
       path2: path2.map((x) => x.toString()),
     };
 
-    console.log("Generating proof with input:", JSON.stringify(input, null, 2));
+    console.log(
+      "Generating real ZK proof with input:",
+      JSON.stringify(input, null, 2)
+    );
 
-    // Generate proof
+    // Generate proof using snarkjs
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(
       input,
       wasmPath,
       zkeyPath
+    );
+
+    console.log("Generated real ZK proof successfully");
+    console.log("Proof structure:", Object.keys(proof));
+    console.log(
+      "Public signals:",
+      publicSignals.map((x: any) => x.toString())
     );
 
     return { proof, publicSignals };
