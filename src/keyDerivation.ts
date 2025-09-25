@@ -1,6 +1,7 @@
 import { buildPoseidon } from "circomlibjs";
 
 let poseidon: any = null;
+let F: any = null;
 
 /**
  * Initialize the Poseidon hash function
@@ -8,8 +9,9 @@ let poseidon: any = null;
 async function initPoseidon() {
   if (!poseidon) {
     poseidon = await buildPoseidon();
+    F = poseidon.F;
   }
-  return poseidon;
+  return { poseidon, F };
 }
 
 /**
@@ -20,7 +22,7 @@ export async function derivePrivateKey(
   seed: bigint[],
   path: number[]
 ): Promise<bigint[]> {
-  const poseidonFn = await initPoseidon();
+  const { poseidon: poseidonFn, F } = await initPoseidon();
 
   // Convert seed to the format expected by Poseidon (12 inputs)
   const inputs: bigint[] = [];
@@ -35,24 +37,23 @@ export async function derivePrivateKey(
     inputs.push(BigInt(path[i]));
   }
 
-  // Hash using Poseidon (12 inputs)
-  const hash = poseidonFn(inputs);
+  // Hash using Poseidon (12 inputs) with proper field arithmetic
+  const hashResult = poseidonFn(inputs);
+  const hashBigInt = BigInt(F.toString(hashResult));
 
-  // Convert hash to BigInt
-  const hashBigInt = BigInt(
-    "0x" +
-      Array.from(hash)
-        .map((b: any) => b.toString(16).padStart(2, "0"))
-        .join("")
+  console.log(
+    "TypeScript Poseidon inputs:",
+    inputs.map((x) => x.toString())
   );
+  console.log("TypeScript Poseidon hash result:", hashBigInt.toString());
 
-  // Generate private key deterministically (8 elements)
+  // Generate private key deterministically (8 elements) using field arithmetic
   const privateKey: bigint[] = [];
   for (let i = 0; i < 8; i++) {
-    privateKey.push(hashBigInt + BigInt(i));
+    privateKey.push(F.add(hashResult, F.e(i)));
   }
 
-  return privateKey;
+  return privateKey.map((x) => BigInt(F.toString(x)));
 }
 
 /**
@@ -62,26 +63,25 @@ export async function derivePrivateKey(
 export async function generatePublicKey(
   privateKey: bigint[]
 ): Promise<bigint[]> {
-  const poseidonFn = await initPoseidon();
+  const { poseidon: poseidonFn, F } = await initPoseidon();
 
-  // Hash private key using Poseidon (8 inputs)
-  const hash = poseidonFn(privateKey);
+  // Hash private key using Poseidon (8 inputs) with proper field arithmetic
+  const hashResult = poseidonFn(privateKey);
+  const hashBigInt = BigInt(F.toString(hashResult));
 
-  // Convert hash to BigInt
-  const hashBigInt = BigInt(
-    "0x" +
-      Array.from(hash)
-        .map((b: any) => b.toString(16).padStart(2, "0"))
-        .join("")
+  console.log(
+    "TypeScript private key for hashing:",
+    privateKey.map((x) => x.toString())
   );
+  console.log("TypeScript key hasher result:", hashBigInt.toString());
 
-  // Generate public key (4 elements)
+  // Generate public key (4 elements) using field arithmetic
   const publicKey: bigint[] = [];
   for (let i = 0; i < 4; i++) {
-    publicKey.push(hashBigInt + BigInt(i));
+    publicKey.push(F.add(hashResult, F.e(i)));
   }
 
-  return publicKey;
+  return publicKey.map((x) => BigInt(F.toString(x)));
 }
 
 /**

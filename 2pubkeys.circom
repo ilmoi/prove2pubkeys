@@ -26,6 +26,8 @@ template KeyDerive() {
     for (var i = 0; i < 8; i++) {
         private_key[i] <== hasher.out + i;
     }
+    
+    log("hasher.out", hasher.out);
 }
 
 // Template for Ed25519 key generation from private key
@@ -46,6 +48,8 @@ template Ed25519KeyGen() {
     public_key[1] <== key_hasher.out + 1;
     public_key[2] <== key_hasher.out + 2;
     public_key[3] <== key_hasher.out + 3;
+    
+    log("key_hasher.out", key_hasher.out);
 }
 
 // Main circuit template
@@ -86,59 +90,50 @@ template Prove2PubKeys() {
     // Verify that derived public keys match input public keys
     component eq1[4];
     component eq2[4];
-    
+
     for (var i = 0; i < 4; i++) {
         eq1[i] = IsEqual();
         eq2[i] = IsEqual();
         
         eq1[i].in[0] <== keygen1.public_key[i];
         eq1[i].in[1] <== pubkey1[i];
+
+        log("eq1[i].in[0]", eq1[i].in[0]);
+        log("eq1[i].in[1]", eq1[i].in[1]);
         
         eq2[i].in[0] <== keygen2.public_key[i];
         eq2[i].in[1] <== pubkey2[i];
+
+        log("eq2[i].in[0]", eq2[i].in[0]);
+        log("eq2[i].in[1]", eq2[i].in[1]);
     }
     
-    // Check if both public keys match
-    component and1 = AND();
-    component and2 = AND();
-    component final_and = AND();
+    // Check if all equality results are 1
+    // For pubkey1: eq1[0] * eq1[1] * eq1[2] * eq1[3] should be 1
+    // For pubkey2: eq2[0] * eq2[1] * eq2[2] * eq2[3] should be 1
+    // Final result: both should be 1
     
-    and1.a <== eq1[0].out;
-    and1.b <== eq1[1].out;
+    signal temp1;
+    signal temp2;
+    signal temp3;
+    signal temp4;
+    signal temp5;
+    signal temp6;
     
-    and2.a <== eq1[2].out;
-    and2.b <== eq1[3].out;
+    temp1 <== eq1[0].out * eq1[1].out;
+    temp2 <== temp1 * eq1[2].out;
+    temp3 <== temp2 * eq1[3].out;
     
-    final_and.a <== and1.out;
-    final_and.b <== and2.out;
+    temp4 <== eq2[0].out * eq2[1].out;
+    temp5 <== temp4 * eq2[2].out;
+    temp6 <== temp5 * eq2[3].out;
     
-    component and3 = AND();
-    component and4 = AND();
-    component final_and2 = AND();
-    
-    and3.a <== eq2[0].out;
-    and3.b <== eq2[1].out;
-    
-    and4.a <== eq2[2].out;
-    and4.b <== eq2[3].out;
-    
-    final_and2.a <== and3.out;
-    final_and2.b <== and4.out;
-    
-    component final_check = AND();
-    final_check.a <== final_and.out;
-    final_check.b <== final_and2.out;
-    
-    valid <== final_check.out;
-}
+    valid <== temp3 * temp6;
 
-// Component definitions
-template AND() {
-    signal input a;
-    signal input b;
-    signal output out;
+    log("valid", valid);
     
-    out <== a * b;
+    // Ensure valid is exactly 1 (not 0)
+    valid === 1;
 }
 
 // Main component
