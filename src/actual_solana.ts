@@ -145,3 +145,48 @@ console.log("path m/44'/501'/0'/1' ->", p1.pubkeyBase58);
 
 // Also export raw bytes if you need them:
 // console.log("raw pub0:", p0.pubkeyBytes.toString("hex"));
+
+// --------------------------------------- 25th word
+
+// When you introduce the “25th word” (a passphrase in BIP39 terms), you’re not changing Solana’s derivation algorithm itself — you’re changing the seed input that feeds into it.
+
+// How normal derivation works
+
+// You start with a BIP39 mnemonic (12/24 words).
+
+// Mnemonic → PBKDF2-HMAC-SHA512 → 64-byte BIP39 seed.
+
+// That seed is passed into SLIP-0010 Ed25519 derivation (exactly as in your code).
+
+// From there, hardened path derivation → 32-byte private key → Ed25519 PKCS8 → pubkey.
+
+// How the 25th word changes it
+
+// In BIP39, the PBKDF2 step takes:
+
+// Password = mnemonic words joined with spaces
+
+// Salt = "mnemonic" + passphrase
+
+// If you don’t use a passphrase, salt = "mnemonic".
+
+// If you use a 25th word (say "banana"), salt = "mnemonicbanana".
+
+// This produces an entirely different 64-byte seed.
+
+// After that, derivation continues identically (same SLIP-0010 / Ed25519 steps).
+
+// Key implications
+
+// The 25th word doesn’t append to the derivation path — it’s not "m/44'/501'/0'/0'/banana".
+
+// It’s applied before derivation, altering the root entropy.
+
+// Two users with the same 24 words but different passphrases will generate totally different Solana keypairs.
+
+// Lose/forget the passphrase → funds inaccessible.
+
+// Security: makes it resistant to mnemonic theft (attacker needs both 24 words and the passphrase).
+
+// So:
+// Your derive-solana.ts code stays the same. The only change is how you construct the seed buffer: if using the 25th word, you must derive the seed with PBKDF2 using "mnemonic" + passphrase as the salt.
